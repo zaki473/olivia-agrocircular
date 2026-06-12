@@ -3,11 +3,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { useLimbah } from "@/context/LimbahContext";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 
 const kategoriList = ["Semua", "Jerami Padi", "Kohe Sapi", "Ampas Tahu", "Batang Jagung", "Kulit Kakao", "Sekam Padi"];
 
-export default function PasarBarterPage() {
+function PasarBarterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { limbahList } = useLimbah();
@@ -135,5 +135,13 @@ export default function PasarBarterPage() {
 
       <Footer />
     </>
+  );
+}
+
+export default function PasarBarterPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-green-800">Loading...</div>}>
+      <PasarBarterContent />
+    </Suspense>
   );
 }
