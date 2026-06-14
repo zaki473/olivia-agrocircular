@@ -122,6 +122,7 @@ export function LimbahProvider({ children }: { children: ReactNode }) {
     });
 
     if (error) return { error: error.message };
+    await fetchLimbah();
     return { error: null };
   };
 
@@ -134,10 +135,12 @@ export function LimbahProvider({ children }: { children: ReactNode }) {
         await supabase.storage.from("limbah-images").remove([path]);
       }
     }
+    await fetchLimbah();
   };
 
   const toggleAktifMap = async (id: string, current: boolean) => {
     await supabase.from("limbah").update({ aktif_di_map: !current }).eq("id", id);
+    await fetchLimbah();
   };
 
   return (

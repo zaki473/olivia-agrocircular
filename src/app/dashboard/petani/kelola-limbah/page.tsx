@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLimbah } from "@/context/LimbahContext";
 import { useAuth } from "@/context/AuthContext";
 
@@ -7,7 +7,11 @@ const kategoriOptions = ["Jerami Padi", "Kohe Sapi", "Ampas Tahu", "Kulit Kakao"
 
 export default function KelolaLimbahPage() {
   const { limbahList, tambahLimbah, hapusLimbah, toggleAktifMap, loading } = useLimbah();
-  const { user, profile } = useAuth();
+  const { user, profile, refetchProfile } = useAuth();
+
+  useEffect(() => {
+    if (refetchProfile) refetchProfile();
+  }, []);
 
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -21,6 +25,42 @@ export default function KelolaLimbahPage() {
   const [sukses, setSukses] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const [lokasi, setLokasi] = useState("");
+  const [detectingGps, setDetectingGps] = useState(false);
+
+  useEffect(() => {
+    if (profile?.lokasi) {
+      setLokasi(profile.lokasi);
+    } else {
+      setLokasi("Malang, Jawa Timur");
+    }
+  }, [profile]);
+
+  const handleGPSLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation tidak didukung oleh browser Anda");
+      return;
+    }
+    setDetectingGps(true);
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      const { latitude, longitude } = position.coords;
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+        const data = await res.json();
+        const city = data.address.city || data.address.town || data.address.municipality || data.address.county || "Malang";
+        const state = data.address.state || "Jawa Timur";
+        setLokasi(`${city}, ${state}`);
+      } catch (e) {
+        setLokasi("Malang, Jawa Timur");
+      } finally {
+        setDetectingGps(false);
+      }
+    }, () => {
+      alert("Gagal mendeteksi lokasi via GPS. Silakan tulis secara manual.");
+      setDetectingGps(false);
+    }, { timeout: 6000 });
+  };
   
 
   const postinganSaya = limbahList.filter((l) => l.pemilik_id === user?.id);
@@ -59,7 +99,7 @@ const handleSubmit = async () => {
     judul,
     kategori,
     berat: Number(berat),
-    lokasi: profile?.lokasi || "Bandung, Jawa Barat",
+    lokasi: lokasi || profile?.lokasi || "Malang, Jawa Timur",
     mekanisme,
     harga: mekanisme === "jual" ? Number(harga) : null,
     deskripsi,
@@ -101,136 +141,177 @@ const handleSubmit = async () => {
       )}
 
       {/* Form Unggah */}
-      <div className="bg-[#f0f7f0] rounded-2xl p-6 mb-8">
-        <h1 className="text-xl font-bold text-green-900 mb-1">⊕ Unggah Ketersediaan Limbah</h1>
-        <p className="text-gray-500 text-sm mb-6">
-          Masa panen menghasilkan sisa melimpah? Terbitkan postingan agar dibarter tetangga tani atau dijemput truk pabrik.
-        </p>
-
-        <div className="mb-4">
-          <p className="text-sm font-medium text-gray-700 mb-2">Mekanisme Alokasi Sinergi</p>
-          <div className="flex bg-white border border-gray-200 rounded-lg overflow-hidden w-full max-w-sm">
-            <button
-              onClick={() => setMekanisme("barter")}
-              className={`flex-1 py-2.5 text-sm font-medium transition ${mekanisme === "barter"
-                ? "bg-green-700 text-white"
-                : "text-gray-500 hover:bg-gray-50"
-                }`}
-            >
-              Barter
-            </button>
-            <button
-              onClick={() => setMekanisme("jual")}
-              className={`flex-1 py-2.5 text-sm font-medium transition ${mekanisme === "jual"
-                ? "bg-green-700 text-white"
-                : "text-gray-500 hover:bg-gray-50"
-                }`}
-            >
-              Jual
-            </button>
+      {profile?.status_verifikasi !== "terverifikasi" ? (
+        <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-6 mb-8 shadow-sm">
+          <div className="flex items-start gap-4">
+            <span className="text-3xl">⚠️</span>
+            <div>
+              <h3 className="font-bold text-lg text-amber-900 mb-1">Akses Unggah Komoditas Terkunci</h3>
+              <p className="text-sm text-amber-800 leading-relaxed mb-4">
+                Akun Anda belum terverifikasi oleh Admin. Untuk menjaga keaslian data dan keaktifan sirkularitas di platform AgroCircular, silakan lengkapi profil dan dokumen identitas Anda terlebih dahulu di menu Profil.
+              </p>
+              <a
+                href="/dashboard/petani/profile"
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-600 to-amber-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition shadow-md hover:shadow-amber-500/20"
+              >
+                Lengkapi Profil & Dokumen Sekarang →
+              </a>
+            </div>
           </div>
         </div>
+      ) : (
+        <div className="bg-[#f0f7f0] rounded-2xl p-6 mb-8">
+          <h1 className="text-xl font-bold text-green-900 mb-1">⊕ Unggah Ketersediaan Limbah</h1>
+          <p className="text-gray-500 text-sm mb-6">
+            Masa panen menghasilkan sisa melimpah? Terbitkan postingan agar dibarter tetangga tani atau dijemput truk pabrik.
+          </p>
 
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="md:col-span-2">
-            <label className="text-sm text-gray-600 mb-1 block">Judul Postingan Limbah</label>
-            <input
-              type="text"
-              value={judul}
-              onChange={(e) => setJudul(e.target.value)}
-              placeholder="Contoh: Kotoran Sapi Basah Segar 4 Karung"
-              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
-          </div>
-          <div>
-            <label className="text-sm text-gray-600 mb-1 block">Kategori Limbah</label>
-            <select
-              value={kategori}
-              onChange={(e) => setKategori(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
-            >
-              {kategoriOptions.map((k) => (
-                <option key={k}>{k}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-sm text-gray-600 mb-1 block">Total Estimasi Berat (Kg)</label>
-            <input
-              type="number"
-              value={berat}
-              onChange={(e) => setBerat(e.target.value)}
-              placeholder="500"
-              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
-          </div>
-
-          {mekanisme === "jual" ? (
-            <div className="md:col-span-2">
-              <label className="text-sm text-gray-600 mb-1 block">Nominal Jual (per Kg)</label>
-              <input
-                type="number"
-                value={harga}
-                onChange={(e) => setHarga(e.target.value)}
-                placeholder="1500"
-                className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
-              />
+          <div className="mb-4">
+            <p className="text-sm font-medium text-gray-700 mb-2">Mekanisme Alokasi Sinergi</p>
+            <div className="flex bg-white border border-gray-200 rounded-lg overflow-hidden w-full max-w-sm">
+              <button
+                onClick={() => setMekanisme("barter")}
+                className={`flex-1 py-2.5 text-sm font-medium transition ${mekanisme === "barter"
+                  ? "bg-green-700 text-white"
+                  : "text-gray-500 hover:bg-gray-50"
+                  }`}
+              >
+                Barter
+              </button>
+              <button
+                onClick={() => setMekanisme("jual")}
+                className={`flex-1 py-2.5 text-sm font-medium transition ${mekanisme === "jual"
+                  ? "bg-green-700 text-white"
+                  : "text-gray-500 hover:bg-gray-50"
+                  }`}
+              >
+                Jual
+              </button>
             </div>
-          ) : (
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              <label className="text-sm text-gray-600 mb-1 block">Ingin Ditukar Dengan</label>
+              <label className="text-sm text-gray-600 mb-1 block">Judul Postingan Limbah</label>
               <input
                 type="text"
-                value={barterDengan}
-                onChange={(e) => setBarterDengan(e.target.value)}
-                placeholder="Contoh: Sekam Padi, Kohe Sapi"
+                value={judul}
+                onChange={(e) => setJudul(e.target.value)}
+                placeholder="Contoh: Kotoran Sapi Basah Segar 4 Karung"
                 className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
-          )}
+            <div>
+              <label className="text-sm text-gray-600 mb-1 block">Kategori Limbah</label>
+              <select
+                value={kategori}
+                onChange={(e) => setKategori(e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
+              >
+                {kategoriOptions.map((k) => (
+                  <option key={k}>{k}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm text-gray-600 mb-1 block">Total Estimasi Berat (Kg)</label>
+              <input
+                type="number"
+                value={berat}
+                onChange={(e) => setBerat(e.target.value)}
+                placeholder="500"
+                className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
 
-          <div className="md:col-span-2">
-            <label className="text-sm text-gray-600 mb-1 block">Foto Limbah (Opsional)</label>
-            <div className="flex items-center gap-4">
-              {preview ? (
-                <img src={preview} alt="Preview" className="w-24 h-24 object-cover rounded-lg border border-gray-200" />
-              ) : (
-                <div className="w-24 h-24 bg-gray-50 border border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-300 text-xs">
-                  Belum ada foto
-                </div>
-              )}
-              <div className="flex-1">
+            <div className="md:col-span-2">
+              <label className="text-sm text-gray-600 mb-1 block">Lokasi Limbah</label>
+              <div className="flex gap-2">
                 <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="block w-full text-sm text-gray-600 border border-gray-200 rounded-lg cursor-pointer focus:outline-none file:bg-green-50 file:text-green-700 file:border-0 file:px-4 file:py-2 file:mr-3 file:cursor-pointer hover:file:bg-green-100"
+                  type="text"
+                  value={lokasi}
+                  onChange={(e) => setLokasi(e.target.value)}
+                  placeholder="Contoh: Lowokwaru, Malang"
+                  className="flex-1 border border-gray-200 rounded-lg px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
-                <p className="text-xs text-gray-400 mt-1">Format JPG/PNG, maksimal 5MB</p>
+                <button
+                  type="button"
+                  onClick={handleGPSLocation}
+                  disabled={detectingGps}
+                  className="bg-green-50 text-green-700 border border-green-200 px-4 py-3 rounded-lg text-xs font-semibold hover:bg-green-100 transition whitespace-nowrap disabled:opacity-50"
+                >
+                  {detectingGps ? "Mendeteksi..." : "📍 Deteksi GPS"}
+                </button>
               </div>
+            </div>
+
+            {mekanisme === "jual" ? (
+              <div className="md:col-span-2">
+                <label className="text-sm text-gray-600 mb-1 block">Nominal Jual (per Kg)</label>
+                <input
+                  type="number"
+                  value={harga}
+                  onChange={(e) => setHarga(e.target.value)}
+                  placeholder="1500"
+                  className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+            ) : (
+              <div className="md:col-span-2">
+                <label className="text-sm text-gray-600 mb-1 block">Ingin Ditukar Dengan</label>
+                <input
+                  type="text"
+                  value={barterDengan}
+                  onChange={(e) => setBarterDengan(e.target.value)}
+                  placeholder="Contoh: Sekam Padi, Kohe Sapi"
+                  className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+            )}
+
+            <div className="md:col-span-2">
+              <label className="text-sm text-gray-600 mb-1 block">Foto Limbah (Opsional)</label>
+              <div className="flex items-center gap-4">
+                {preview ? (
+                  <img src={preview} alt="Preview" className="w-24 h-24 object-cover rounded-lg border border-gray-200" />
+                ) : (
+                  <div className="w-24 h-24 bg-gray-50 border border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-300 text-xs">
+                    Belum ada foto
+                  </div>
+                )}
+                <div className="flex-1">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="block w-full text-sm text-gray-600 border border-gray-200 rounded-lg cursor-pointer focus:outline-none file:bg-green-50 file:text-green-700 file:border-0 file:px-4 file:py-2 file:mr-3 file:cursor-pointer hover:file:bg-green-100"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Format JPG/PNG, maksimal 5MB</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="text-sm text-gray-600 mb-1 block">Deskripsi Detail & Kondisi Kelembapan</label>
+              <textarea
+                rows={4}
+                value={deskripsi}
+                onChange={(e) => setDeskripsi(e.target.value)}
+                placeholder="Ceritakan kondisi limbah Anda, tingkat kekeringan, apakah sudah dikarungi, atau butuh bantuan kendaraan angkut."
+                className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
+              />
             </div>
           </div>
 
-          <div className="md:col-span-2">
-            <label className="text-sm text-gray-600 mb-1 block">Deskripsi Detail & Kondisi Kelembapan</label>
-            <textarea
-              rows={4}
-              value={deskripsi}
-              onChange={(e) => setDeskripsi(e.target.value)}
-              placeholder="Ceritakan kondisi limbah Anda, tingkat kekeringan, apakah sudah dikarungi, atau butuh bantuan kendaraan angkut."
-              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
-            />
-          </div>
+          <button
+            onClick={handleSubmit}
+            disabled={submitting}
+            className="w-full mt-4 bg-green-700 text-white font-semibold py-3 rounded-xl hover:bg-green-800 transition disabled:opacity-50"
+          >
+            {submitting ? "Menyimpan..." : "Terbitkan Postingan Komoditas"}
+          </button>
         </div>
-
-        <button
-          onClick={handleSubmit}
-          disabled={submitting}
-          className="w-full mt-4 bg-green-700 text-white font-semibold py-3 rounded-xl hover:bg-green-800 transition disabled:opacity-50"
-        >
-          {submitting ? "Menyimpan..." : "Terbitkan Postingan Komoditas"}
-        </button>
-      </div>
+      )}
 
       {/* Postingan Aktif */}
       <div>

@@ -1,5 +1,7 @@
+"use client";
 import Link from "next/link";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import { useAuth } from "@/context/AuthContext";
 
 const adminNav = [
   { href: "/dashboard/admin", label: "Overview" },
@@ -10,6 +12,8 @@ const adminNav = [
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const { logout } = useAuth();
+
   return (
     <ProtectedRoute allowedRoles={["admin"]}>
       <div className="min-h-screen bg-gray-50">
@@ -33,7 +37,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </Link>
               ))}
             </div>
-            <Link href="/login" className="text-gray-400 text-sm hover:text-gray-600">Keluar →</Link>
+            <button 
+              onClick={logout} 
+              className="text-gray-400 text-sm hover:text-gray-600 transition"
+            >
+              Keluar →
+            </button>
           </div>
         </nav>
         <main className="max-w-7xl mx-auto px-4 py-8">{children}</main>

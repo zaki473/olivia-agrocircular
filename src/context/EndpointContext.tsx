@@ -101,6 +101,7 @@ export function EndpointProvider({ children }: { children: ReactNode }) {
       if (error) return { error: error.message };
     }
 
+    await fetchEndpoint();
     return { error: null };
   };
 

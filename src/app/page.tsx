@@ -235,8 +235,16 @@ export default function BerandaPage() {
                 className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between"
               >
                 <div>
-                  <div className="bg-lime-100 h-24 sm:h-32 flex items-center justify-center relative">
-                    <span className="text-2xl sm:text-3xl">🌿</span>
+                  <div className="bg-lime-100 h-24 sm:h-32 flex items-center justify-center overflow-hidden relative">
+                    {item.gambar_url ? (
+                      <img
+                        src={item.gambar_url}
+                        alt={item.judul}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-2xl sm:text-3xl">🌿</span>
+                    )}
                     <span className="absolute top-2 right-2 bg-green-500 text-white text-[10px] sm:text-xs px-2 py-0.5 rounded-full">
                       Baru
                     </span>

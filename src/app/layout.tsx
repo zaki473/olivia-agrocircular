@@ -8,6 +8,8 @@ import { EndpointProvider } from "@/context/EndpointContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "AgroCircular",
   description: "Sinergi Agrikultur Sirkular",

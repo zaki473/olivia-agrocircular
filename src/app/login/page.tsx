@@ -52,15 +52,21 @@ export default function LoginPage() {
 
     setLoading(true);
     const { error } = await register(email, password, nama, role);
-    setLoading(false);
 
     if (error) {
+      setLoading(false);
       setError(error);
       return;
     }
 
-    setSuccessMsg("Registrasi berhasil! Silakan cek email untuk verifikasi, lalu login.");
-    setTab("masuk");
+    // Auto-login setelah registrasi berhasil
+    const { error: loginError } = await login(email, password);
+    setLoading(false);
+
+    if (loginError) {
+      setSuccessMsg("Registrasi berhasil! Silakan masuk menggunakan akun Anda.");
+      setTab("masuk");
+    }
   };
 
   useEffect(() => {

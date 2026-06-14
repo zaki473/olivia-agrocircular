@@ -35,7 +35,6 @@ export default function ProfilePetaniPage() {
       setAlamatLengkap(profile.alamat_lengkap || "");
       setNamaUsaha(profile.nama_usaha || "");
 
-      // Load preview dokumen yang sudah ada
       if (profile.foto_ktp_url) {
         getDokumenUrl(profile.foto_ktp_url).then(setPreviewKtp);
       }
@@ -84,10 +83,8 @@ export default function ProfilePetaniPage() {
       if (uploaded) usahaPath = uploaded;
     }
 
-    // Tentukan status verifikasi otomatis
     let statusVerifikasi = profile?.status_verifikasi || "belum_lengkap";
     if (ktpPath && nik && alamatLengkap && nomorTelepon) {
-      // Data sudah lengkap, ajukan untuk verifikasi (kalau belum terverifikasi)
       if (statusVerifikasi === "belum_lengkap" || statusVerifikasi === "ditolak") {
         statusVerifikasi = "menunggu";
       }
@@ -122,209 +119,165 @@ export default function ProfilePetaniPage() {
   };
 
   const statusBadge = () => {
+    const baseClass = "text-[10px] sm:text-xs px-2.5 py-1 rounded-lg font-bold border uppercase tracking-tight transition-all";
     switch (profile?.status_verifikasi) {
       case "terverifikasi":
-        return <span className="bg-green-100 text-green-700 text-xs px-3 py-1 rounded-full font-semibold">✓ Terverifikasi</span>;
+        return <span className={`${baseClass} bg-green-50 text-green-700 border-green-200`}>✓ Terverifikasi</span>;
       case "menunggu":
-        return <span className="bg-yellow-100 text-yellow-700 text-xs px-3 py-1 rounded-full font-semibold">🕐 Menunggu Verifikasi Admin</span>;
+        return <span className={`${baseClass} bg-amber-50 text-amber-700 border-amber-200`}>🕐 Menunggu Verifikasi</span>;
       case "ditolak":
-        return <span className="bg-red-100 text-red-700 text-xs px-3 py-1 rounded-full font-semibold">✕ Ditolak — Lengkapi Ulang</span>;
+        return <span className={`${baseClass} bg-red-50 text-red-700 border-red-200`}>✕ Perlu Perbaikan</span>;
       default:
-        return <span className="bg-gray-100 text-gray-500 text-xs px-3 py-1 rounded-full font-semibold">Belum Lengkap</span>;
+        return <span className={`${baseClass} bg-gray-100 text-gray-400 border-gray-200`}>Belum Lengkap</span>;
     }
   };
 
   return (
-    <div>
-      <div className="bg-green-800 rounded-2xl h-36 mb-14 relative">
-        <div className="absolute -bottom-10 left-6 flex items-end gap-4">
-          <div className="w-20 h-20 bg-white rounded-full border-4 border-white flex items-center justify-center text-3xl shadow">
-            🏭
-          </div>
-          <div className="mb-2">
-            <p className="text-xl font-bold text-gray-800">{profile?.nama}</p>
-            <div className="flex items-center gap-2">
-              <span className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full font-medium">
-                {profile?.role === "petani" ? "Mitra Petani" : profile?.role}
-              </span>
-              {statusBadge()}
+    <div className="max-w-5xl mx-auto p-4 sm:p-6 antialiased bg-gray-50/30 min-h-screen">
+
+      {/* HEADER CARD - Banner dan Info di dalam satu kotak */}
+      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-8">
+        {/* Banner Hijau Atas */}
+        <div className="h-32 sm:h-44 bg-gradient-to-r from-green-800 to-green-700 relative">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+        </div>
+
+        {/* Konten Info Bawah (Masih di dalam Card Putih) */}
+        <div className="px-6 pb-6 pt-0">
+          <div className="flex flex-col sm:flex-row items-center sm:items-end gap-5 -mt-12 relative z-10">
+            {/* Avatar bulat */}
+            <div className="w-24 h-24 sm:w-32 sm:h-32 bg-white rounded-full border-[6px] border-white shadow-md flex items-center justify-center text-4xl sm:text-5xl shrink-0">
+              {profile?.role === "petani" ? "👩‍🌾" : "🏭"}
+            </div>
+
+            {/* Nama & Status */}
+            <div className="flex-1 text-center sm:text-left pb-1">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight leading-none mb-3">
+                {profile?.nama || "Nama Pengguna"}
+              </h1>
+              <div className="flex flex-wrap justify-center sm:justify-start items-center gap-2">
+                <span className="bg-green-600 text-white text-[10px] sm:text-xs px-3 py-1 rounded-lg font-bold uppercase tracking-wider shadow-sm">
+                  {profile?.role === "petani" ? "Mitra Petani" : profile?.role || "Mitra Usaha"}
+                </span>
+                {statusBadge()}
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {sukses && (
-        <div className="bg-green-100 border border-green-300 text-green-800 px-4 py-3 rounded-xl mb-4 text-sm font-medium">
-          ✅ Profil berhasil disimpan{profile?.status_verifikasi === "menunggu" ? " dan diajukan untuk verifikasi admin." : "."}
-        </div>
-      )}
-      {error && (
-        <div className="bg-red-100 border border-red-300 text-red-800 px-4 py-3 rounded-xl mb-4 text-sm font-medium">
-          ❌ {error}
-        </div>
-      )}
+      {/* NOTIFIKASI ALERT */}
+      <div className="space-y-4 mb-6">
+        {sukses && (
+          <div className="bg-green-600 text-white px-5 py-3 rounded-2xl text-sm font-semibold shadow-lg shadow-green-900/10 transition-all">
+            ✅ Profil berhasil disimpan dan diperbarui.
+          </div>
+        )}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-5 py-3 rounded-2xl text-sm font-semibold">
+            ❌ Gagal: {error}
+          </div>
+        )}
+        {profile?.status_verifikasi === "ditolak" && profile?.catatan_verifikasi && (
+          <div className="bg-red-50 border-l-4 border-red-500 rounded-xl p-4 shadow-sm">
+            <p className="text-[10px] font-black text-red-700 uppercase mb-1">Catatan Admin:</p>
+            <p className="text-sm text-red-600 leading-relaxed font-medium">{profile.catatan_verifikasi}</p>
+          </div>
+        )}
+      </div>
 
-      {profile?.status_verifikasi === "ditolak" && profile?.catatan_verifikasi && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
-          <p className="text-sm font-semibold text-red-700 mb-1">Catatan dari Admin:</p>
-          <p className="text-sm text-red-600">{profile.catatan_verifikasi}</p>
-        </div>
-      )}
+      {/* GRID CONTENT UTAMA */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-      <div className="grid md:grid-cols-3 gap-6">
-        <div className="md:col-span-2 space-y-6">
-          {/* Data Pribadi */}
-          <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
-            <h2 className="font-semibold text-gray-800 text-lg mb-4">👤 Detail Pribadi</h2>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <label className="text-sm text-gray-500 mb-1 block">Nama Lengkap</label>
+        <div className="lg:col-span-2 space-y-8">
+
+          {/* Card: Detail Pribadi */}
+          <div className="bg-white border border-gray-100 rounded-3xl p-6 sm:p-8 shadow-sm">
+            <h2 className="font-bold text-gray-800 text-xl mb-8 flex items-center gap-3 border-b pb-5 border-gray-50">
+              <span className="p-2 bg-green-50 rounded-lg text-green-700">👤</span> Informasi Pribadi
+            </h2>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="sm:col-span-2 space-y-1.5">
+                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">Nama Lengkap</label>
                 <input
                   type="text"
                   value={nama}
                   onChange={(e) => setNama(e.target.value)}
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full border border-gray-200 rounded-2xl px-5 py-3.5 text-sm bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-green-500/10 focus:border-green-600 outline-none transition-all"
                 />
               </div>
-              <div>
-                <label className="text-sm text-gray-500 mb-1 block">Nomor Telepon *</label>
+
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">No. Telepon *</label>
                 <input
                   type="text"
                   value={nomorTelepon}
                   onChange={(e) => setNomorTelepon(e.target.value)}
-                  placeholder="08123456789"
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full border border-gray-200 rounded-2xl px-5 py-3.5 text-sm bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-green-500/10 focus:border-green-600 outline-none transition-all"
                 />
               </div>
-              <div>
-                <label className="text-sm text-gray-500 mb-1 block">Nomor WhatsApp</label>
-                <input
-                  type="text"
-                  value={whatsapp}
-                  onChange={(e) => setWhatsapp(e.target.value)}
-                  placeholder="08123456789"
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-              <div className="col-span-2">
-                <label className="text-sm text-gray-500 mb-1 block">NIK (KTP) *</label>
+
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">NIK (KTP) *</label>
                 <input
                   type="text"
                   value={nik}
                   onChange={(e) => setNik(e.target.value)}
-                  placeholder="16 digit nomor KTP"
                   maxLength={16}
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full border border-gray-200 rounded-2xl px-5 py-3.5 text-sm bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-green-500/10 focus:border-green-600 outline-none transition-all"
                 />
               </div>
-              <div>
-                <label className="text-sm text-gray-500 mb-1 block">Lokasi (Kota/Kabupaten)</label>
-                <input
-                  type="text"
-                  value={lokasi}
-                  onChange={(e) => setLokasi(e.target.value)}
-                  placeholder="Contoh: Bandung, Jawa Barat"
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-              <div className="col-span-2">
-                <label className="text-sm text-gray-500 mb-1 block">Alamat Lengkap *</label>
+
+              <div className="sm:col-span-2 space-y-1.5">
+                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">Alamat Lengkap KTP *</label>
                 <textarea
-                  rows={3}
+                  rows={2}
                   value={alamatLengkap}
                   onChange={(e) => setAlamatLengkap(e.target.value)}
-                  placeholder="Sesuai KTP"
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
+                  className="w-full border border-gray-200 rounded-2xl px-5 py-3.5 text-sm bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-green-500/10 focus:border-green-600 outline-none transition-all resize-none"
                 />
               </div>
             </div>
           </div>
 
-          {/* Detail Usaha */}
-          <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
-            <h2 className="font-semibold text-gray-800 text-lg mb-4">🌿 Detail Pertanian / Usaha</h2>
-            <div>
-              <label className="text-sm text-gray-500 mb-1 block">Nama Kelompok Tani / Usaha</label>
+          {/* Card: Detail Bisnis */}
+          <div className="bg-white border border-gray-100 rounded-3xl p-6 sm:p-8 shadow-sm">
+            <h2 className="font-bold text-gray-800 text-xl mb-8 flex items-center gap-3 border-b pb-5 border-gray-50">
+              <span className="p-2 bg-amber-50 rounded-lg text-amber-700">🏢</span> Detail Bisnis / Usaha
+            </h2>
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">Nama Perusahaan / Kelompok</label>
               <input
                 type="text"
                 value={namaUsaha}
                 onChange={(e) => setNamaUsaha(e.target.value)}
-                placeholder="Contoh: Kelompok Tani Sumber Makmur"
-                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                placeholder="Contoh: CV Sinergi Tani Bersama"
+                className="w-full border border-gray-200 rounded-2xl px-5 py-3.5 text-sm bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 outline-none transition-all"
               />
-            </div>
-          </div>
-
-          {/* Upload Dokumen */}
-          <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
-            <h2 className="font-semibold text-gray-800 text-lg mb-1">📄 Dokumen Verifikasi</h2>
-            <p className="text-gray-400 text-sm mb-4">
-              Upload dokumen berikut agar akun Anda dapat diverifikasi oleh admin. Dokumen bersifat privat dan hanya bisa dilihat oleh Anda dan admin.
-            </p>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm text-gray-600 mb-1 block">Foto KTP *</label>
-                {previewKtp ? (
-                  <img src={previewKtp} alt="KTP" className="w-full h-32 object-cover rounded-lg border border-gray-200 mb-2" />
-                ) : (
-                  <div className="w-full h-32 bg-gray-50 border border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-300 text-xs mb-2">
-                    Belum ada foto
-                  </div>
-                )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileKtp}
-                  className="block w-full text-xs text-gray-600 border border-gray-200 rounded-lg cursor-pointer focus:outline-none file:bg-green-50 file:text-green-700 file:border-0 file:px-3 file:py-2 file:mr-3 file:cursor-pointer hover:file:bg-green-100"
-                />
-              </div>
-
-              <div>
-                <label className="text-sm text-gray-600 mb-1 block">Foto Lahan / Usaha (Opsional)</label>
-                {previewUsaha ? (
-                  <img src={previewUsaha} alt="Usaha" className="w-full h-32 object-cover rounded-lg border border-gray-200 mb-2" />
-                ) : (
-                  <div className="w-full h-32 bg-gray-50 border border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-300 text-xs mb-2">
-                    Belum ada foto
-                  </div>
-                )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileUsaha}
-                  className="block w-full text-xs text-gray-600 border border-gray-200 rounded-lg cursor-pointer focus:outline-none file:bg-green-50 file:text-green-700 file:border-0 file:px-3 file:py-2 file:mr-3 file:cursor-pointer hover:file:bg-green-100"
-                />
-              </div>
             </div>
           </div>
 
           <button
             onClick={handleSave}
             disabled={saving}
-            className="w-full bg-green-700 text-white font-semibold py-3 rounded-xl hover:bg-green-800 transition disabled:opacity-50"
+            className="w-full bg-green-700 hover:bg-green-800 text-white font-bold py-4 rounded-2xl shadow-xl shadow-green-900/10 transition-all active:scale-[0.98] disabled:opacity-50"
           >
-            {saving ? "Menyimpan..." : "Simpan & Ajukan Verifikasi"}
+            {saving ? "Sedang Memproses..." : "Simpan & Ajukan Verifikasi"}
           </button>
         </div>
 
-        {/* Sidebar */}
-        <div className="space-y-4">
-          <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-            <p className="font-semibold text-gray-800 mb-2">Status Akun</p>
-            {statusBadge()}
-            <p className="text-gray-400 text-xs mt-3 leading-relaxed">
-              {profile?.status_verifikasi === "terverifikasi" &&
-                "Akun Anda sudah terverifikasi. Anda dapat mengakses semua fitur platform."}
-              {profile?.status_verifikasi === "menunggu" &&
-                "Data Anda sedang ditinjau oleh admin. Proses verifikasi biasanya memakan waktu 1-2 hari kerja."}
-              {profile?.status_verifikasi === "ditolak" &&
-                "Pengajuan verifikasi Anda ditolak. Silakan lengkapi/perbaiki data sesuai catatan admin, lalu ajukan kembali."}
-              {(profile?.status_verifikasi === "belum_lengkap" || !profile?.status_verifikasi) &&
-                "Lengkapi data diri dan upload dokumen untuk mengajukan verifikasi."}
+        {/* Sidebar Status */}
+        <div className="lg:sticky lg:top-6 space-y-6">
+          <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
+            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">Ringkasan Akun</h3>
+            <div className="mb-6">{statusBadge()}</div>
+            <p className="text-[11px] text-gray-500 leading-relaxed pt-5 border-t border-gray-50">
+              Pastikan seluruh data dengan tanda bintang (*) terisi dengan benar. Dokumen Anda dijamin aman dan hanya digunakan untuk keperluan verifikasi identitas di platform ini.
             </p>
           </div>
         </div>
+
       </div>
     </div>
   );

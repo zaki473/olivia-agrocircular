@@ -121,18 +121,20 @@ useEffect(() => {
 }) => {
   if (!user) return { error: "Anda harus login" };
 
-  const { error } = await supabase.from("transaksi").insert({
-    ...data,
-    pengaju_id: user.id,
-    status: "menunggu",
-  });
+    const { error } = await supabase.from("transaksi").insert({
+      ...data,
+      pengaju_id: user.id,
+      status: "menunggu",
+    });
 
-  if (error) return { error: error.message };
-  return { error: null };
-};
+    if (error) return { error: error.message };
+    await fetchTransaksi();
+    return { error: null };
+  };
 
   const updateStatus = async (id: string, status: "diterima" | "ditolak") => {
     await supabase.from("transaksi").update({ status }).eq("id", id);
+    await fetchTransaksi();
   };
 
 return (
