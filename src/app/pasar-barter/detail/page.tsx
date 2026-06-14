@@ -4,30 +4,26 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import { limbahList, Limbah } from "@/data/limbah";
+import { useLimbah, Limbah } from "@/context/LimbahContext";
 import AjukanButton from "@/components/shared/AjukanButton";
 
 export default function DetailProdukPage() {
-  const router = useRouter();
+  const { limbahList } = useLimbah();
   const [item, setItem] = useState<Limbah | null>(null);
 
   useEffect(() => {
     const id = sessionStorage.getItem("selected_limbah_id");
-    const found = limbahList.find((l) => l.id === Number(id)) || limbahList[0];
-    setItem(found);
-  }, []);
+    const found = limbahList.find((l) => l.id === id) || limbahList[0];
+    setItem(found || null);
+  }, [limbahList]);
 
-  if (!item) return null;
-
-  const handleAjukanBarter = () => {
-    sessionStorage.setItem("barter_target_id", String(item.id));
-    router.push("/dashboard/petani/ajukan-barter");
-  };
-
-  const handleAjukanPembelian = () => {
-    sessionStorage.setItem("jual_target_id", String(item.id));
-    router.push("/dashboard/petani/ajukan-pembelian");
-  };
+  if (!item) return (
+    <>
+      <Navbar />
+      <div className="max-w-7xl mx-auto px-4 py-20 text-center text-gray-400">Memuat produk...</div>
+      <Footer />
+    </>
+  );
 
   return (
     <>
@@ -42,10 +38,13 @@ export default function DetailProdukPage() {
         </p>
 
         <div className="grid md:grid-cols-2 gap-10">
-          {/* Kiri */}
           <div>
-            <div className="bg-green-100 rounded-xl h-72 flex items-center justify-center mb-4 relative">
-              <span className="text-green-600">📦 Foto Produk</span>
+            <div className="bg-green-100 rounded-xl h-72 flex items-center justify-center mb-4 relative overflow-hidden">
+              {item.gambar_url ? (
+                <img src={item.gambar_url} alt={item.judul} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-green-600">📦 Foto Produk</span>
+              )}
               <span className="absolute top-3 left-3 bg-green-700 text-white text-xs px-2 py-0.5 rounded">BARU</span>
             </div>
             <div className="flex gap-2">
@@ -67,7 +66,6 @@ export default function DetailProdukPage() {
             </div>
           </div>
 
-          {/* Kanan */}
           <div>
             <h1 className="text-2xl font-bold text-gray-900 mb-1">{item.judul}</h1>
             <p className="text-gray-500 text-sm mb-4">📍 {item.lokasi}</p>
@@ -82,7 +80,7 @@ export default function DetailProdukPage() {
                   <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">🌾</div>
                   <div>
                     <p className="font-medium text-sm">{item.barter_dengan}</p>
-                    <p className="text-gray-400 text-xs">Jumlah: 250 Kg</p>
+                    <p className="text-gray-400 text-xs">Jumlah: {item.berat} Kg</p>
                   </div>
                 </div>
                 <AjukanButton
@@ -127,26 +125,21 @@ export default function DetailProdukPage() {
               </div>
             )}
 
-            {/* Profil Pemilik */}
             <div className="bg-[#f0f7f0] rounded-xl p-4">
               <p className="font-semibold text-gray-800 mb-3">Profil Pemilik</p>
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 bg-green-700 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                  {item.pemilik_nama[0]}
+                  {item.profiles?.nama?.[0] || "P"}
                 </div>
                 <div>
-                  <p className="font-medium text-sm">{item.pemilik_nama}</p>
-                  <p className="text-yellow-500 text-xs">⭐ {item.rating} ({item.review} Review)</p>
+                  <p className="font-medium text-sm">{item.profiles?.nama || "Petani"}</p>
+                  <p className="text-gray-400 text-xs">{item.profiles?.role || "Petani"}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div>
                   <p className="text-gray-400 uppercase tracking-wide">Lokasi</p>
                   <p className="font-medium text-gray-700 mt-0.5">{item.lokasi}</p>
-                </div>
-                <div>
-                  <p className="text-gray-400 uppercase tracking-wide">Barter Berhasil</p>
-                  <p className="font-medium text-gray-700 mt-0.5">48 Transaksi</p>
                 </div>
               </div>
             </div>

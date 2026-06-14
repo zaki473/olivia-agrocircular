@@ -28,7 +28,7 @@ const jualIcon = new L.Icon({
 });
 
 export type MapMarker = {
-  id: number;
+  id: string;
   nama: string;
   lat: number;
   lng: number;
@@ -37,12 +37,20 @@ export type MapMarker = {
   info?: string;
 };
 
-export default function MapLeaflet({ markers }: { markers: MapMarker[] }) {
+export default function MapLeaflet({
+  markers,
+  onMarkerClick,
+}: {
+  markers: MapMarker[];
+  onMarkerClick?: (marker: MapMarker) => void;
+}) {
   const getIcon = (tipe: MapMarker["tipe"]) => {
     if (tipe === "pengepul") return pengepulIcon;
     if (tipe === "barter") return barterIcon;
     return jualIcon;
   };
+
+  const validMarkers = markers.filter((m) => m.lat != null && m.lng != null);
 
   return (
     <MapContainer
@@ -55,8 +63,15 @@ export default function MapLeaflet({ markers }: { markers: MapMarker[] }) {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      {markers.map((m) => (
-        <Marker key={`${m.tipe}-${m.id}`} position={[m.lat, m.lng]} icon={getIcon(m.tipe)}>
+      {validMarkers.map((m) => (
+        <Marker
+          key={`${m.tipe}-${m.id}`}
+          position={[m.lat, m.lng]}
+          icon={getIcon(m.tipe)}
+          eventHandlers={{
+            click: () => onMarkerClick?.(m),
+          }}
+        >
           <Popup>
             <div className="text-sm">
               <p className="font-bold">{m.nama}</p>
@@ -69,6 +84,14 @@ export default function MapLeaflet({ markers }: { markers: MapMarker[] }) {
               }`}>
                 {m.tipe === "pengepul" ? "Pengepul" : m.tipe === "barter" ? "Barter" : "Jual"}
               </span>
+              {m.tipe === "pengepul" && onMarkerClick && (
+                <button
+                  onClick={() => onMarkerClick(m)}
+                  className="mt-2 w-full bg-green-700 text-white text-xs py-1.5 rounded-lg"
+                >
+                  Lihat Detail & Ajukan Tawaran
+                </button>
+              )}
             </div>
           </Popup>
         </Marker>

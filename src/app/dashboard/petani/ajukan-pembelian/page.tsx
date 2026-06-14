@@ -2,24 +2,57 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { limbahList } from "@/data/limbah";
+import { useLimbah, Limbah } from "@/context/LimbahContext";
+import { useTransaksi } from "@/context/TransaksiContext";
 
 export default function AjukanPembelianPage() {
   const router = useRouter();
-  const [targetLimbah, setTargetLimbah] = useState(limbahList[0]);
-  const [jumlah, setJumlah] = useState(targetLimbah.berat);
+  const { limbahList } = useLimbah();
+  const { ajukanTransaksi } = useTransaksi();
+
+  const [targetLimbah, setTargetLimbah] = useState<Limbah | null>(null);
+  const [jumlah, setJumlah] = useState(0);
   const [pesan, setPesan] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const id = sessionStorage.getItem("jual_target_id");
-    const found = limbahList.find((l) => l.id === Number(id));
+    const found = limbahList.find((l) => l.id === id);
     if (found) {
       setTargetLimbah(found);
       setJumlah(found.berat);
     }
-  }, []);
+  }, [limbahList]);
+
+  if (!targetLimbah) {
+    return <div className="text-center py-20 text-gray-400">Memuat data produk...</div>;
+  }
 
   const totalHarga = (targetLimbah.harga ?? 0) * jumlah;
+
+  const handleKirimTawaran = async () => {
+    setSubmitting(true);
+    setError("");
+
+    const { error } = await ajukanTransaksi({
+      limbah_id: targetLimbah.id,
+      pemilik_id: targetLimbah.pemilik_id,
+      tipe: "jual",
+      pesan,
+      jumlah,
+      total_harga: totalHarga,
+    });
+
+    setSubmitting(false);
+
+    if (error) {
+      setError(error);
+      return;
+    }
+
+    router.push("/dashboard/petani/kotak-transaksi");
+  };
 
   return (
     <div>
@@ -28,8 +61,13 @@ export default function AjukanPembelianPage() {
       </Link>
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Ajukan Pembelian</h1>
 
+      {error && (
+        <div className="bg-red-100 border border-red-300 text-red-800 px-4 py-3 rounded-xl mb-4 text-sm">
+          ❌ {error}
+        </div>
+      )}
+
       <div className="grid md:grid-cols-2 gap-6 items-start">
-        {/* Item yang dibeli */}
         <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
           <h3 className="font-semibold text-gray-700 mb-4">Item yang Kamu Beli</h3>
           <div className="bg-green-100 rounded-xl h-48 flex items-center justify-center relative mb-3">
@@ -43,17 +81,16 @@ export default function AjukanPembelianPage() {
             <p className="text-xs text-gray-500 mb-2">Pemilik Item</p>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-green-700 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                {targetLimbah.pemilik_nama[0]}
+                {targetLimbah.profiles?.nama?.[0] || "P"}
               </div>
               <div>
-                <p className="text-sm font-semibold text-green-800">{targetLimbah.pemilik_nama}</p>
-                <p className="text-xs text-gray-400">{targetLimbah.pemilik_role}</p>
+                <p className="text-sm font-semibold text-green-800">{targetLimbah.profiles?.nama || "Petani"}</p>
+                <p className="text-xs text-gray-400">{targetLimbah.profiles?.role || "Petani"}</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Form Pembelian */}
         <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-8 h-8 bg-green-700 rounded-full flex items-center justify-center text-white text-sm">💰</div>
@@ -112,10 +149,11 @@ export default function AjukanPembelianPage() {
           </div>
 
           <button
-            onClick={() => router.push("/dashboard/petani/kotak-transaksi")}
-            className="w-full bg-[#b5e550] text-green-900 font-semibold py-3 rounded-xl hover:opacity-90 transition"
+            onClick={handleKirimTawaran}
+            disabled={submitting}
+            className="w-full bg-[#b5e550] text-green-900 font-semibold py-3 rounded-xl hover:opacity-90 transition disabled:opacity-50"
           >
-            Kirim Tawaran
+            {submitting ? "Mengirim..." : "Kirim Tawaran"}
           </button>
           <p className="text-xs text-gray-400 text-center mt-2">
             Tawaran Anda akan berlaku selama 48 jam.
